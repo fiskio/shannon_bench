@@ -1,0 +1,35 @@
+version: '3'
+
+tasks:
+  test:
+    desc: Run tests in parallel and generate a coverage report.
+    cmds:
+      - uv run pytest --numprocesses=auto --cov=. --cov-report=html --cov-report=term src/
+    silent: false
+
+  lint:
+    desc: Run static analysis tools (type checking and linting/fixing).
+    cmds:
+      - task: ty
+      - task: ruff-fix
+    silent: false
+
+  ty:
+    desc: Run type checking with Typer.
+    cmd: uv run ty check
+
+  ruff-fix:
+    desc: Run Ruff to check, fix, and sort imports.
+    cmds:
+      # Format the code (also sorts imports, equivalent to isort)
+      - uv run ruff format .
+      # Lint and apply fixes for all fixable rules
+      - uv run ruff check . --fix
+    silent: false
+
+  default:
+    desc: Run all quality checks (lint and test).
+    cmds:
+      - task: lint
+      - task: test
+    silent: false
