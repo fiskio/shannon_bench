@@ -3,6 +3,7 @@
 ## Code Style
 
 - **Indentation**: Use 2 spaces for indentation in all code files (Python, JavaScript, shell scripts, etc.)
+- **Whitespace**: Remove all bad whitespace including trailing whitespace, mixed tabs/spaces, and unnecessary blank lines at end of file
 
 ## Python Standards
 
