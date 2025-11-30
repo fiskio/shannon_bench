@@ -3,7 +3,7 @@
 import numpy as np
 import pytest
 
-from shannon_bench.simulator.channels import awgn, eme, hf, satellite, vhf
+from shannon_bench.simulator.channels import awgn, eme, hf, ideal, satellite, vhf
 from shannon_bench.simulator.impairements import (
   AWGN,
   ChannelImpairment,
@@ -14,6 +14,28 @@ from shannon_bench.simulator.impairements import (
   SSBFilter,
   TappedDelayLine,
 )
+
+
+class TestIdealChannels:
+  """Tests for Ideal (zero impairment) channel presets."""
+
+  def test_perfect_channel_has_zero_impairments(self) -> None:
+    """Test that the PERFECT channel preset returns an empty list."""
+    # Test the factory function
+    factory_impairments = ideal.perfect()
+    assert isinstance(factory_impairments, list)
+    assert len(factory_impairments) == 0
+
+    # Test the constant preset
+    preset = ideal.PERFECT
+    assert preset.name == "Perfect Channel"
+    assert preset.typical_sample_rate == ideal.TYPICAL_SAMPLE_RATE
+    assert isinstance(preset.impairments, list)
+    assert len(preset.impairments) == 0
+
+  def test_preset_constants_exist(self) -> None:
+    """Test that the pre-configured preset constant exists."""
+    assert hasattr(ideal, "PERFECT")
 
 
 class TestHFChannels:
@@ -365,6 +387,7 @@ class TestChannelIntegration:
   @pytest.mark.parametrize(
     ("preset_class", "factory_func"),
     [
+      (ideal, ideal.perfect),
       (hf, hf.excellent),
       (hf, hf.good),
       (hf, hf.moderate),
@@ -408,6 +431,7 @@ class TestChannelIntegration:
   @pytest.mark.parametrize(
     "preset",
     [
+      ideal.PERFECT,
       hf.ITU_R_EXCELLENT,
       hf.ITU_R_GOOD,
       hf.ITU_R_MODERATE,

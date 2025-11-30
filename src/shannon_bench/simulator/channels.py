@@ -857,3 +857,41 @@ awgn.SNR_0DB = ChannelPreset(
   impairments=awgn.only(0.0),
   typical_sample_rate=awgn.TYPICAL_SAMPLE_RATE,
 )
+
+
+# =============================================================================
+# Ideal Channels (Zero Impairment)
+# =============================================================================
+
+
+class ideal:  # noqa: N801
+  """Ideal channel presets with zero impairments.
+
+  Useful for:
+
+  - Testing base performance without channel effects.
+  - Verifying simulator integrity.
+  """
+
+  TYPICAL_SAMPLE_RATE: int = 48000  # Hz (arbitrary, works at any rate)
+
+  # Pre-configured preset (assigned below)
+  PERFECT: ChannelPreset
+
+  @staticmethod
+  def perfect() -> list[ChannelImpairment]:
+    """An ideal channel with zero impairments (perfect transmission).
+
+    Returns:
+      An empty list of channel impairments.
+    """
+    return []
+
+
+# Pre-configured ideal preset
+ideal.PERFECT = ChannelPreset(
+  name="Perfect Channel",
+  description="Ideal channel with no impairments (AWGN, fading, or offset).",
+  impairments=ideal.perfect(),
+  typical_sample_rate=ideal.TYPICAL_SAMPLE_RATE,
+)
