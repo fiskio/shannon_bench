@@ -126,12 +126,12 @@ class TestHFChannels:
     # Check "Good" condition (0.5 ms delay)
     impairments = hf.good()
     tdl = next(imp for imp in impairments if isinstance(imp, TappedDelayLine))
-    
+
     # Calculate expected delay in samples at 8 kHz
     # 0.5 ms * 8000 Hz = 4 samples
     delay_sec = tdl.taps[1].delay_sec
-    delay_samples = int(round(delay_sec * hf.TYPICAL_SAMPLE_RATE))
-    
+    delay_samples = round(delay_sec * hf.TYPICAL_SAMPLE_RATE)
+
     assert delay_samples > 0, "HF taps collapsed to flat fading!"
     assert delay_samples == 4
 
@@ -166,9 +166,7 @@ class TestVHFChannels:
     impairments = vhf.mobile_urban()
     # Should use TappedDelayLine with Rayleigh fading on taps
     tdl = next(imp for imp in impairments if isinstance(imp, TappedDelayLine))
-    assert any(
-      isinstance(tap.fading_model, RayleighFading) for tap in tdl.taps
-    )
+    assert any(isinstance(tap.fading_model, RayleighFading) for tap in tdl.taps)
 
   def test_mobile_rural_has_rician(self) -> None:
     """Test that mobile rural uses Rician fading (LOS component)."""
@@ -444,8 +442,6 @@ class TestChannelIntegration:
     assert output.dtype == np.complex64
     assert not np.any(np.isnan(output))
     assert not np.any(np.isinf(output))
-
-
 
 
 class TestTypicalSampleRates:

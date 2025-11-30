@@ -15,7 +15,9 @@ import logging
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from typing import TYPE_CHECKING
-from collections.abc import Sequence
+
+if TYPE_CHECKING:
+  from collections.abc import Sequence
 
 import numpy as np
 import numpy.typing as npt
@@ -459,11 +461,12 @@ class TappedDelayLine(BaseModel, ChannelImpairment):
       # 2. Apply delay
       # Convert delay from seconds to samples
       delay_samples = tap.delay_sec * sample_rate
-      
+
       # Use integer delay for simplicity and efficiency
-      # (Fractional delay would require sinc interpolation, which is computationally expensive
-      # and maybe overkill for this simulation level, but can be added if needed)
-      delay_int = int(round(delay_samples))
+      # (Fractional delay would require sinc interpolation, which is
+      # computationally expensive and maybe overkill for this simulation
+      # level, but can be added if needed)
+      delay_int = round(delay_samples)
 
       if delay_int == 0:
         delayed_signal = signal
@@ -487,7 +490,8 @@ class TappedDelayLine(BaseModel, ChannelImpairment):
       output_signal += amplitude_scale * faded_signal
 
     # 5. Normalize total power if requested
-    # This ensures the channel doesn't amplify or attenuate the total signal energy on average
+    # This ensures the channel doesn't amplify or attenuate the total
+    # signal energy on average
     if self.normalize_power and total_power_linear > 0:
       output_signal /= np.sqrt(total_power_linear)
 

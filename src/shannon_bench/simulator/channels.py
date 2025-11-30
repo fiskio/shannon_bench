@@ -26,16 +26,17 @@ References:
     circuits using ionospheric propagation"
 """
 
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel
+
+if TYPE_CHECKING:
+  from collections.abc import Sequence
 
 from shannon_bench.simulator.transmission_system import (
   AWGN,
   ChannelImpairment,
   FreqOffset,
-  Nonlinearity,
-  PhaseNoise,
   RayleighFading,
   RicianFading,
   SSBFilter,
