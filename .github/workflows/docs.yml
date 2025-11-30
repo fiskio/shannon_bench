@@ -32,5 +32,8 @@ jobs:
           restore-keys: |
             mkdocs-material-
 
+      - name: Install dependencies
+        run: uv sync
+
       - name: Deploy documentation
         run: task docs-deploy
