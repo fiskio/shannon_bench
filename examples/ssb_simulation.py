@@ -8,6 +8,7 @@ It allows testing different channel conditions and listening to the effects
 of impairments like fading, noise, and frequency offsets.
 """
 
+import logging
 import sys
 from enum import StrEnum
 from pathlib import Path
@@ -15,12 +16,29 @@ from typing import Annotated, Literal, cast
 
 import numpy as np
 import scipy.io.wavfile
+import sounddevice as sd
 import typer
 
-from shannon_bench.simulator.channels import ChannelPreset, eme, hf, satellite, vhf
+from shannon_bench.setup_logging import setup_logging
+from shannon_bench.simulator.channels import (
+  ChannelPreset,
+  eme,
+  hf,
+  ideal,
+  satellite,
+  vhf,
+)
 from shannon_bench.simulator.impairements import ChannelSimulator
-from shannon_bench.simulator.ssb_system import SSBReceiver, SSBTransmitter
+from shannon_bench.simulator.ssb_system import (
+  AnalogSourceDecoder,
+  AnalogSourceEncoder,
+  SSBReceiver,
+  SSBTransmitter,
+)
 from shannon_bench.simulator.transmission_system import TransmissionSystem
+
+setup_logging(level="INFO")
+logger = logging.getLogger(__name__)
 
 
 class SidebandMode(StrEnum):
@@ -34,8 +52,8 @@ def load_audio(file_path: Path) -> tuple[int, np.ndarray]:
   """Load audio file and convert to float32 [-1, 1]."""
   try:
     sample_rate, data = scipy.io.wavfile.read(file_path)
-  except (ValueError, OSError) as e:
-    print(f"Error reading audio file {file_path}: {e}")  # noqa: T201
+  except (ValueError, OSError):
+    logger.exception(f"Error reading audio file {file_path}")
     sys.exit(1)
 
   # Convert to float32 normalized
@@ -48,12 +66,12 @@ def load_audio(file_path: Path) -> tuple[int, np.ndarray]:
   elif data.dtype == np.float32:
     pass  # Already float32
   else:
-    print(f"Unsupported audio format: {data.dtype}")  # noqa: T201
+    logger.error(f"Unsupported audio format: {data.dtype}")
     sys.exit(1)
 
   # Convert to mono if stereo
   if len(data.shape) > 1:
-    print("Converting stereo to mono...")  # noqa: T201
+    logger.info("Converting stereo to mono...")
     data = np.mean(data, axis=1)
 
   return sample_rate, data
@@ -66,12 +84,26 @@ def save_audio(file_path: Path, sample_rate: int, data: np.ndarray) -> None:
   # Convert to int16
   data_int16 = (data * 32767).astype(np.int16)
   scipy.io.wavfile.write(file_path, sample_rate, data_int16)
-  print(f"Saved output to {file_path}")  # noqa: T201
+  logger.info(f"Saved output to {file_path}")
+
+
+def play_audio(sample_rate: int, data: np.ndarray) -> None:
+  """Play audio using sounddevice."""
+  # Clip to [-1, 1]
+  data = np.clip(data, -1.0, 1.0)
+  logger.info("Playing audio... (press Ctrl+C to stop)")
+  try:
+    sd.play(data, sample_rate, blocking=True)
+    logger.info("Playback complete!")
+  except KeyboardInterrupt:
+    sd.stop()
+    logger.info("Playback stopped.")
 
 
 def get_channel_preset(preset_name: str) -> ChannelPreset:
   """Get channel preset by name."""
   presets = {
+    "ideal": ideal.PERFECT,
     "hf_excellent": hf.ITU_R_EXCELLENT,
     "hf_good": hf.ITU_R_GOOD,
     "hf_moderate": hf.ITU_R_MODERATE,
@@ -86,8 +118,8 @@ def get_channel_preset(preset_name: str) -> ChannelPreset:
   }
 
   if preset_name not in presets:
-    print(f"Unknown preset: {preset_name}")  # noqa: T201
-    print(f"Available presets: {', '.join(presets.keys())}")  # noqa: T201
+    logger.error(f"Unknown preset: {preset_name}")
+    logger.error(f"Available presets: {', '.join(presets.keys())}")
     sys.exit(1)
 
   return presets[preset_name]
@@ -98,8 +130,13 @@ def main(
     Path, typer.Argument(help="Input WAV file path", exists=True, readable=True)
   ],
   output: Annotated[
-    Path, typer.Option("--output", "-o", help="Output WAV file path")
-  ] = Path("output.wav"),
+    Path | None,
+    typer.Option(
+      "--output",
+      "-o",
+      help="Output WAV file path (if not specified, plays audio instead)",
+    ),
+  ] = None,
   preset: Annotated[
     str,
     typer.Option(
@@ -119,12 +156,16 @@ def main(
 ) -> None:
   """Simulate SSB transmission over an impaired channel."""
   # 1. Load Audio
-  print(f"Loading {input_file}...")  # noqa: T201
+  logger.info(f"Loading {input_file}...")
   sample_rate, audio = load_audio(input_file)
-  print(f"Loaded {len(audio) / sample_rate:.2f}s audio at {sample_rate}Hz")  # noqa: T201
+  logger.info(f"Loaded {len(audio) / sample_rate:.2f}s audio at {sample_rate}Hz")
 
   # 2. Setup System
-  print("Setting up simulation chain...")  # noqa: T201
+  logger.info("Setting up simulation chain...")
+
+  # Source encoder/decoder (pass-through for analog systems)
+  source_encoder = AnalogSourceEncoder(output_sample_rate=sample_rate)
+  source_decoder = AnalogSourceDecoder(output_sample_rate=sample_rate)
 
   # Transmitter
   tx = SSBTransmitter(
@@ -141,26 +182,35 @@ def main(
 
   # Channel
   channel_preset = get_channel_preset(preset)
-  print(f"Using channel preset: {channel_preset.name}")  # noqa: T201
-  print(f"  {channel_preset.description}")  # noqa: T201
+  logger.info(f"Using channel preset: {channel_preset.name}")
+  logger.info(f"  {channel_preset.description}")
 
   channel = ChannelSimulator(
     impairments=channel_preset.impairments, sample_rate=tx.output_sample_rate
   )
 
-  system = TransmissionSystem(tx, rx, channel)
+  system = TransmissionSystem(
+    source_encoder=source_encoder,
+    source_decoder=source_decoder,
+    transmitter=tx,
+    receiver=rx,
+    channel=channel,
+  )
 
   # 3. Run Simulation
-  print("Running simulation...")  # noqa: T201
+  logger.info("Running simulation...")
   output_audio = system.process(audio, sample_rate)
 
-  # 4. Save Output
-  save_audio(output, sample_rate, output_audio)
-
-  print("\nSimulation complete!")  # noqa: T201
-  print("To compare, play the original and output files:")  # noqa: T201
-  print(f"  Original: {input_file}")  # noqa: T201
-  print(f"  Output:   {output}")  # noqa: T201
+  # 4. Output (save or play)
+  if output is not None:
+    save_audio(output, sample_rate, output_audio)
+    logger.info("Simulation complete!")
+    logger.info("To compare, play the original and output files:")
+    logger.info(f"  Original: {input_file}")
+    logger.info(f"  Output:   {output}")
+  else:
+    logger.info("Simulation complete!")
+    play_audio(sample_rate, output_audio)
 
 
 if __name__ == "__main__":

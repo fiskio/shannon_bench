@@ -12,7 +12,98 @@ import numpy as np
 import numpy.typing as npt
 import scipy.signal
 
-from shannon_bench.simulator.transmission_system import Receiver, Transmitter
+from shannon_bench.simulator.transmission_system import (
+  Receiver,
+  SourceDecoder,
+  SourceEncoder,
+  Transmitter,
+)
+
+
+class AnalogSourceEncoder(SourceEncoder):
+  """Pass-through source encoder for analog transmission systems.
+
+  For analog systems like SSB/FM, there's no digital source coding step.
+  This class simply passes the audio through, optionally resampling to
+  the desired output rate.
+  """
+
+  def __init__(self, output_sample_rate: int = 48000) -> None:
+    """Initialize analog source encoder.
+
+    Args:
+      output_sample_rate: Output sample rate in Hz.
+    """
+    self._output_sample_rate = output_sample_rate
+
+  @property
+  def output_sample_rate(self) -> int:
+    """The output sample rate in Hz."""
+    return self._output_sample_rate
+
+  def encode(
+    self, audio: npt.NDArray[np.float32], input_sample_rate: int
+  ) -> npt.NDArray[np.float32]:
+    """Pass through audio, resampling if necessary.
+
+    Args:
+      audio: Input audio samples (mono, float32).
+      input_sample_rate: Audio sample rate in Hz.
+
+    Returns:
+      Audio samples at output_sample_rate.
+    """
+    if input_sample_rate == self._output_sample_rate:
+      return audio
+
+    # Use polyphase resampling
+    gcd = np.gcd(input_sample_rate, self._output_sample_rate)
+    up = self._output_sample_rate // gcd
+    down = input_sample_rate // gcd
+    return scipy.signal.resample_poly(audio, up, down).astype(np.float32)
+
+
+class AnalogSourceDecoder(SourceDecoder):
+  """Pass-through source decoder for analog transmission systems.
+
+  For analog systems like SSB/FM, there's no digital source decoding step.
+  This class simply passes the audio through, optionally resampling to
+  the desired output rate.
+  """
+
+  def __init__(self, output_sample_rate: int = 48000) -> None:
+    """Initialize analog source decoder.
+
+    Args:
+      output_sample_rate: Output audio sample rate in Hz.
+    """
+    self._output_sample_rate = output_sample_rate
+
+  @property
+  def output_sample_rate(self) -> int:
+    """Sample rate of the final output audio in Hz."""
+    return self._output_sample_rate
+
+  def decode(
+    self, demod_output: npt.NDArray[np.float32], input_rate: float
+  ) -> npt.NDArray[np.float32]:
+    """Pass through audio, resampling if necessary.
+
+    Args:
+      demod_output: The output from the Receiver's demodulation stage.
+      input_rate: The rate of the input signal (sample rate in Hz).
+
+    Returns:
+      Reconstructed audio (mono, float32, normalized to [-1, 1]).
+    """
+    if int(input_rate) == self._output_sample_rate:
+      return demod_output
+
+    # Use polyphase resampling
+    gcd = np.gcd(int(input_rate), self._output_sample_rate)
+    up = self._output_sample_rate // gcd
+    down = int(input_rate) // gcd
+    return scipy.signal.resample_poly(demod_output, up, down).astype(np.float32)
 
 
 class SSBTransmitter(Transmitter):
@@ -52,25 +143,34 @@ class SSBTransmitter(Transmitter):
     return self._output_sample_rate
 
   def modulate(
-    self, audio: npt.NDArray[np.float32], input_sample_rate: int
+    self,
+    source_output: npt.NDArray[np.float32] | npt.NDArray[np.uint8],
+    source_output_rate: float,
   ) -> npt.NDArray[np.complex64]:
     """Modulate audio to SSB baseband signal.
 
     Args:
-      audio: Input audio samples (mono, float32).
-      input_sample_rate: Input audio sample rate.
+      source_output: Input audio samples (mono, float32).
+      source_output_rate: Input audio sample rate.
 
     Returns:
       Complex baseband signal (I/Q).
     """
+    # SSB only works with float32 audio, not digital bits
+    if source_output.dtype != np.float32:
+      msg = f"SSB modulation requires float32 audio, got {source_output.dtype}"
+      raise TypeError(msg)
+
     # 1. Resample if necessary
-    if input_sample_rate != self.output_sample_rate:
+    if source_output_rate != self.output_sample_rate:
       # Use polyphase resampling for better quality (anti-aliasing)
       # Find integer ratio if possible, or use large integers
-      gcd = np.gcd(input_sample_rate, self.output_sample_rate)
+      gcd = np.gcd(int(source_output_rate), self.output_sample_rate)
       up = self.output_sample_rate // gcd
-      down = input_sample_rate // gcd
-      audio = scipy.signal.resample_poly(audio, up, down)
+      down = int(source_output_rate) // gcd
+      audio = scipy.signal.resample_poly(source_output, up, down)
+    else:
+      audio = source_output
 
     # 2. Bandpass filter audio (e.g., 300-2700 Hz for voice) to limit bandwidth
     # We'll use a simple Butterworth filter.

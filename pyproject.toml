@@ -12,10 +12,12 @@ description = "A benchmarking tool for noisy channels"
 readme = "README.md"
 requires-python = ">=3.14"
 dependencies = [
+    "coloredlogs>=15.0.1",
     "etils[epath]>=1.13.0",
     "numpy>=2.3.5",
     "pydantic>=2.0.0",
     "scipy>=1.16.3",
+    "sounddevice>=0.5.3",
     "typer>=0.20.0",
 ]
 

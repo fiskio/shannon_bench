@@ -22,18 +22,23 @@ from shannon_bench.simulator.impairements import (
   SSBFilter,
 )
 from shannon_bench.simulator.ssb_system import (
+  AnalogSourceDecoder,
+  AnalogSourceEncoder,
   SSBReceiver,
   SSBTransmitter,
 )
 from shannon_bench.simulator.transmission_system import (
   Receiver,
+  SourceDecoder,
+  SourceEncoder,
   TransmissionSystem,
   Transmitter,
 )
 
 __all__ = [
-  # Transmission system components
   "AWGN",
+  "AnalogSourceDecoder",
+  "AnalogSourceEncoder",
   "ChannelImpairment",
   "ChannelPreset",
   "ChannelSimulator",
@@ -47,9 +52,10 @@ __all__ = [
   "SSBFilter",
   "SSBReceiver",
   "SSBTransmitter",
+  "SourceDecoder",
+  "SourceEncoder",
   "TransmissionSystem",
   "Transmitter",
-  # Channel presets
   "awgn",
   "channels",
   "eme",
