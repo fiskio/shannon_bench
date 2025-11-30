@@ -2,6 +2,7 @@
 
 [![Test](https://github.com/fiskio/shannon_bench/actions/workflows/test.yml/badge.svg)](https://github.com/fiskio/shannon_bench/actions/workflows/test.yml)
 [![Lint](https://github.com/fiskio/shannon_bench/actions/workflows/lint.yml/badge.svg)](https://github.com/fiskio/shannon_bench/actions/workflows/lint.yml)
+[![Docs](https://github.com/fiskio/shannon_bench/actions/workflows/docs.yml/badge.svg)](https://github.com/fiskio/shannon_bench/actions/workflows/docs.yml)
 [![codecov](https://codecov.io/gh/fiskio/shannon_bench/branch/main/graph/badge.svg)](https://codecov.io/gh/fiskio/shannon_bench)
 [![Python 3.14+](https://img.shields.io/badge/python-3.14+-blue.svg)](https://www.python.org/downloads/)
 [![Code style: Ruff](https://img.shields.io/badge/code%20style-ruff-000000.svg)](https://github.com/astral-sh/ruff)

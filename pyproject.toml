@@ -52,6 +52,9 @@ testpaths = ["src"]
 
 [dependency-groups]
 dev = [
+    "mkdocs>=1.6.1",
+    "mkdocs-material>=9.7.0",
+    "mkdocstrings[python]>=1.0.0",
     "pytest>=9.0.1",
     "pytest-cov>=7.0.0",
     "pytest-xdist>=3.8.0",
