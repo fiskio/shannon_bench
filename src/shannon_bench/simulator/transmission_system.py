@@ -15,14 +15,12 @@ import logging
 from abc import ABC, abstractmethod
 from enum import IntEnum
 from typing import TYPE_CHECKING
+from collections.abc import Sequence
 
 import numpy as np
 import numpy.typing as npt
 from pydantic import BaseModel, Field
 from scipy import signal as scipy_signal
-
-if TYPE_CHECKING:
-  from collections.abc import Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -392,6 +390,116 @@ class RicianFading(BaseModel, ChannelImpairment):
   @property
   def name(self) -> str:
     return f"Rician(K={self.k_factor_db}dB,fd={self.doppler_hz}Hz)"
+
+
+class TapProfile(BaseModel):
+  """Configuration for a single channel tap in a Tapped Delay Line model.
+
+  Attributes:
+    delay_sec: Delay of this tap relative to the first tap in seconds.
+    power_db: Average power of this tap relative to the strongest tap in dB.
+              (Usually 0 dB for the first/strongest tap, negative for others)
+    fading_model: Optional fading model (Rayleigh/Rician) to apply to this tap.
+                  If None, the tap is static (no fading).
+  """
+
+  delay_sec: float = Field(ge=0.0)
+  power_db: float = Field(le=0.0)
+  fading_model: RayleighFading | RicianFading | None = None
+
+  model_config = {"frozen": True}
+
+
+class TappedDelayLine(BaseModel, ChannelImpairment):
+  """Multipath channel simulator using Tapped Delay Line (TDL) model.
+
+  Simulates frequency-selective fading by summing multiple delayed and
+  independently faded copies of the signal. This models the physical reality
+  of multipath propagation where signals arrive via different paths with
+  different delays and Doppler shifts.
+
+  The output signal is:
+    y(t) = sum( h_i(t) * x(t - tau_i) )
+
+  Where:
+    - x(t) is the input signal
+    - tau_i is the delay of the i-th tap
+    - h_i(t) is the complex channel coefficient for the i-th tap (includes
+      power scaling and fading)
+
+  Note:
+    This implementation uses integer sample delays (`int(round(delay * fs))`).
+    For narrowband signals (low sample rates) or very small delays (nanoseconds),
+    multiple taps may collapse into a single tap (flat fading). This is
+    physically correct for narrowband simulations where the signal bandwidth
+    cannot resolve the multipath delay spread.
+  """
+
+  taps: Sequence[TapProfile]
+  normalize_power: bool = True
+
+  model_config = {"frozen": True}
+
+  def apply(
+    self, signal: npt.NDArray[np.complex64], sample_rate: int
+  ) -> npt.NDArray[np.complex64]:
+    """Apply Tapped Delay Line multipath model."""
+    if not self.taps:
+      return signal
+
+    output_signal = np.zeros_like(signal)
+    total_power_linear = 0.0
+
+    for tap in self.taps:
+      # 1. Calculate linear power scale
+      power_linear = 10 ** (tap.power_db / 10)
+      total_power_linear += power_linear
+      amplitude_scale = np.sqrt(power_linear)
+
+      # 2. Apply delay
+      # Convert delay from seconds to samples
+      delay_samples = tap.delay_sec * sample_rate
+      
+      # Use integer delay for simplicity and efficiency
+      # (Fractional delay would require sinc interpolation, which is computationally expensive
+      # and maybe overkill for this simulation level, but can be added if needed)
+      delay_int = int(round(delay_samples))
+
+      if delay_int == 0:
+        delayed_signal = signal
+      elif delay_int >= len(signal):
+        # Delay is longer than signal, contribution is zero
+        delayed_signal = np.zeros_like(signal)
+      else:
+        # Shift signal
+        delayed_signal = np.zeros_like(signal)
+        delayed_signal[delay_int:] = signal[:-delay_int]
+
+      # 3. Apply fading (if configured)
+      if tap.fading_model:
+        # Apply fading to the delayed signal
+        # Note: We pass sample_rate to the fading model so it generates correct Doppler
+        faded_signal = tap.fading_model.apply(delayed_signal, sample_rate)
+      else:
+        faded_signal = delayed_signal
+
+      # 4. Accumulate
+      output_signal += amplitude_scale * faded_signal
+
+    # 5. Normalize total power if requested
+    # This ensures the channel doesn't amplify or attenuate the total signal energy on average
+    if self.normalize_power and total_power_linear > 0:
+      output_signal /= np.sqrt(total_power_linear)
+
+    return output_signal
+
+  @property
+  def stage(self) -> ImpairmentStage:
+    return ImpairmentStage.CHANNEL
+
+  @property
+  def name(self) -> str:
+    return f"TDL({len(self.taps)} taps)"
 
 
 class PhaseNoise(BaseModel, ChannelImpairment):
