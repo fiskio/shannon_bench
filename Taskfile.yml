@@ -15,6 +15,7 @@ tasks:
   lint:
     desc: Run static analysis tools (type checking and linting/fixing).
     cmds:
+      - task: install
       - task: ty
       - task: ruff-fix
     silent: false
