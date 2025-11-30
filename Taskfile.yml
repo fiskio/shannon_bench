@@ -36,12 +36,12 @@ tasks:
 
   docs-build:
     desc: Build the documentation site.
-    cmd: uv run mkdocs build
+    cmd: uv tool run --from . --with mkdocs-material --with 'mkdocstrings[python]' mkdocs build
 
   docs-serve:
     desc: Serve the documentation locally.
-    cmd: uv run mkdocs serve
+    cmd: uv tool run --from . --with mkdocs-material --with 'mkdocstrings[python]' mkdocs serve
 
   docs-deploy:
     desc: Deploy the documentation to GitHub Pages.
-    cmd: uv run mkdocs gh-deploy --force
+    cmd: uv tool run --from . --with mkdocs-material --with 'mkdocstrings[python]' mkdocs gh-deploy --force
