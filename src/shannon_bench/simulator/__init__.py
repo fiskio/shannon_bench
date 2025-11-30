@@ -9,7 +9,7 @@ from shannon_bench.simulator.channels import (
   satellite,
   vhf,
 )
-from shannon_bench.simulator.transmission_system import (
+from shannon_bench.simulator.impairements import (
   AWGN,
   ChannelImpairment,
   ChannelSimulator,
@@ -18,9 +18,11 @@ from shannon_bench.simulator.transmission_system import (
   Nonlinearity,
   PhaseNoise,
   RayleighFading,
-  Receiver,
   RicianFading,
   SSBFilter,
+)
+from shannon_bench.simulator.transmission_system import (
+  Receiver,
   TransmissionSystem,
   Transmitter,
 )

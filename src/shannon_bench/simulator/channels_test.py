@@ -4,7 +4,7 @@ import numpy as np
 import pytest
 
 from shannon_bench.simulator.channels import awgn, eme, hf, satellite, vhf
-from shannon_bench.simulator.transmission_system import (
+from shannon_bench.simulator.impairements import (
   AWGN,
   ChannelImpairment,
   ChannelSimulator,

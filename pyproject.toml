@@ -38,6 +38,7 @@ ignore = [
     "ERA001",  # Found commented-out code (mathematical formulas in comments)
     "PLR2004", # Magic value used in comparison (acceptable for physical constants)
     "G004",    # Logging statement uses f-string (more readable than % formatting)
+    "TC003",   # Move stdlib import into TYPE_CHECKING (Pydantic needs runtime imports)
 ]
 # Allow fix for all enabled rules (when `--fix`) is provided.
 fixable = ["ALL"]

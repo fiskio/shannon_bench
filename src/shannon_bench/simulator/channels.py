@@ -30,7 +30,7 @@ from collections.abc import Sequence
 
 from pydantic import BaseModel
 
-from shannon_bench.simulator.transmission_system import (
+from shannon_bench.simulator.impairements import (
   AWGN,
   ChannelImpairment,
   FreqOffset,
@@ -58,6 +58,10 @@ class ChannelPreset(BaseModel):
   typical_sample_rate: int
 
   model_config = {"frozen": True, "arbitrary_types_allowed": True}
+
+
+# Rebuild model to resolve forward references
+ChannelPreset.model_rebuild()
 
 
 # =============================================================================
