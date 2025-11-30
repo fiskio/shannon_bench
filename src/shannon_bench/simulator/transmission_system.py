@@ -13,11 +13,8 @@ The architecture consists of:
 
 import logging
 from abc import ABC, abstractmethod
+from collections.abc import Sequence
 from enum import IntEnum
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-  from collections.abc import Sequence
 
 import numpy as np
 import numpy.typing as npt

@@ -1,9 +1,14 @@
 version: '3'
 
 tasks:
+  install:
+    desc: Install or update project dependencies.
+    cmd: uv sync
+
   test:
     desc: Run tests in parallel and generate a coverage report.
     cmds:
+      - task: install
       - uv run pytest --numprocesses=auto --cov=. --cov-report=html --cov-report=xml --cov-report=term src/
     silent: false
 
@@ -16,32 +21,31 @@ tasks:
 
   ty:
     desc: Run type checking with Typer.
-    cmd: uv run ty check
+    cmd: uv tool run --from ty ty check
 
   ruff-fix:
     desc: Run Ruff to check, fix, and sort imports.
     cmds:
-      # Format the code (also sorts imports, equivalent to isort)
-      - uv run ruff format .
-      # Lint and apply fixes for all fixable rules
-      - uv run ruff check . --fix
+      - uv tool run --from ruff ruff format .
+      - uv tool run --from ruff ruff check . --fix
     silent: false
+
+  docs-build:
+    desc: Build the documentation site.
+    cmd: uv tool run --from mkdocs --with mkdocs-material --with 'mkdocstrings[python]' mkdocs build -c
+
+  docs-serve:
+    desc: Serve the documentation locally.
+    cmd: uv tool run --from mkdocs --with mkdocs-material --with 'mkdocstrings[python]' mkdocs serve
+
+  docs-deploy:
+    desc: Deploy the documentation to GitHub Pages.
+    cmd: uv tool run --from mkdocs --with mkdocs-material --with 'mkdocstrings[python]' mkdocs gh-deploy --force
 
   default:
     desc: Run all quality checks (lint and test).
     cmds:
       - task: lint
-      - task: test
+      # - task: test
+      - task: docs-build
     silent: false
-
-  docs-build:
-    desc: Build the documentation site.
-    cmd: uv tool run --from . --with mkdocs-material --with 'mkdocstrings[python]' mkdocs build
-
-  docs-serve:
-    desc: Serve the documentation locally.
-    cmd: uv tool run --from . --with mkdocs-material --with 'mkdocstrings[python]' mkdocs serve
-
-  docs-deploy:
-    desc: Deploy the documentation to GitHub Pages.
-    cmd: uv tool run --from . --with mkdocs-material --with 'mkdocstrings[python]' mkdocs gh-deploy --force

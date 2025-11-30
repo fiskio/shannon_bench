@@ -26,12 +26,9 @@ References:
     circuits using ionospheric propagation"
 """
 
-from typing import TYPE_CHECKING
+from collections.abc import Sequence
 
 from pydantic import BaseModel
-
-if TYPE_CHECKING:
-  from collections.abc import Sequence
 
 from shannon_bench.simulator.transmission_system import (
   AWGN,
@@ -99,6 +96,7 @@ class hf:  # noqa: N801
     """Excellent HF conditions: minimal fading, very high SNR.
 
     Typical for:
+
     - Short-range skywave (< 500 km)
     - Quiet ionospheric conditions
     - Strong signal paths
@@ -125,6 +123,7 @@ class hf:  # noqa: N801
     """Good HF conditions: light fading, high SNR.
 
     Typical for:
+
     - Stable mid-range paths (500-2000 km)
     - Daytime propagation
     - Low geomagnetic activity
@@ -167,6 +166,7 @@ class hf:  # noqa: N801
     """Moderate HF conditions: moderate fading and noise.
 
     Typical for:
+
     - Long-range paths (2000-4000 km)
     - Nighttime propagation
     - Moderate geomagnetic activity
@@ -209,6 +209,7 @@ class hf:  # noqa: N801
     """Poor HF conditions: heavy fading, low SNR.
 
     Typical for:
+
     - Very long range (> 4000 km)
     - Disturbed ionospheric conditions
     - High geomagnetic activity (K-index > 5)
@@ -253,6 +254,7 @@ class hf:  # noqa: N801
 
     NVIS uses high-angle radiation (> 75°) for regional coverage (0-400 km).
     Characterized by:
+
     - Very low Doppler spread
     - Stable propagation
     - Typical frequencies: 2-10 MHz
@@ -319,6 +321,7 @@ class vhf:  # noqa: N801
   """VHF/UHF (30-3000 MHz) channel presets for terrestrial mobile/fixed.
 
   VHF/UHF channels are characterized by:
+
   - Line-of-sight or ground reflection propagation
   - Mobile Doppler (10-200 Hz at vehicular speeds)
   - Rayleigh (NLOS) or Rician (LOS) fading
@@ -344,6 +347,7 @@ class vhf:  # noqa: N801
     """Fixed line-of-sight: minimal fading, AWGN-dominated.
 
     Typical for:
+
     - Point-to-point links
     - Base station to fixed terminal
     - Clear line-of-sight paths
@@ -369,6 +373,7 @@ class vhf:  # noqa: N801
     """Mobile urban: heavy Rayleigh fading, high Doppler.
 
     Typical for:
+
     - Urban vehicular (60 km/h at 900 MHz → ~50 Hz Doppler)
     - Dense multipath (buildings, reflections)
     - Non-line-of-sight (NLOS)
@@ -426,6 +431,7 @@ class vhf:  # noqa: N801
     """Mobile rural: Rician fading with LOS component.
 
     Typical for:
+
     - Rural/suburban vehicular
     - Partial line-of-sight
     - Lower Doppler (lower speeds or frequencies)
@@ -454,6 +460,7 @@ class vhf:  # noqa: N801
     """Mobile pedestrian: low Doppler, moderate fading.
 
     Typical for:
+
     - Pedestrian speeds (5 km/h at 2 GHz → ~9 Hz Doppler)
     - Indoor/outdoor transitions
     - Handheld devices
@@ -512,6 +519,7 @@ class satellite:  # noqa: N801
   """Satellite channel presets for LEO, MEO, and GEO orbits.
 
   Satellite channels are characterized by:
+
   - High Doppler shift (LEO: up to ±3 kHz at UHF)
   - Possible Rician fading (strong LOS + multipath)
   - Long propagation delays (not modeled here)
@@ -539,6 +547,7 @@ class satellite:  # noqa: N801
     """LEO satellite, clear conditions: strong LOS, high Doppler.
 
     Typical for:
+
     - Low Earth Orbit (400-2000 km altitude)
     - Clear sky, high elevation angle
     - Strong line-of-sight component
@@ -568,6 +577,7 @@ class satellite:  # noqa: N801
     """LEO satellite, faded conditions: multipath, lower K-factor.
 
     Typical for:
+
     - Low elevation angles (< 20°)
     - Urban/suburban ground stations (multipath)
     - Partial obstruction
@@ -595,6 +605,7 @@ class satellite:  # noqa: N801
     """GEO satellite: minimal Doppler, AWGN-dominated.
 
     Typical for:
+
     - Geostationary orbit (35,786 km altitude)
     - Fixed ground station
     - Stable propagation path
@@ -644,6 +655,7 @@ class eme:  # noqa: N801
   """Earth-Moon-Earth (EME) moonbounce channel presets.
 
   EME channels are characterized by:
+
   - Extremely long path (768,000 km round trip)
   - Very high path loss (~250-270 dB at VHF/UHF)
   - Libration fading (Doppler spread from lunar motion: 0.5-2 Hz)
@@ -652,9 +664,9 @@ class eme:  # noqa: N801
   - Typical sample rate: 48 kHz
 
   References:
-    - ARRL Handbook: "EME Communications"
-    - W1GHZ: "Microwave Antenna Book"
-    - VK3UM: "EME Calculator"
+    - [ARRL Handbook: "EME Communications"](https://www.arrl.org/news/handbook-101-a-new-generation-of-amateur-radio)
+    - [W1GHZ: "Microwave Antenna Book"](https://www.w1ghz.org/antbook/contents.htm)
+    - [VK3UM: "EME Calculator"](https://www.vk5dj.com/doug.html)
 
   Note: Path loss is not modeled here (handled by link budget).
   """
@@ -675,6 +687,7 @@ class eme:  # noqa: N801
     """EME with smooth lunar surface reflection.
 
     Typical for:
+
     - Specular reflection from smooth mare regions
     - Low libration fading
     - Optimal moon position (low declination rate)
@@ -702,6 +715,7 @@ class eme:  # noqa: N801
     """EME with rough lunar surface scattering.
 
     Typical for:
+
     - Diffuse scattering from rough highland regions
     - Higher libration fading
     - Rapid moon declination changes
@@ -729,6 +743,7 @@ class eme:  # noqa: N801
     """EME with degraded conditions.
 
     Typical for:
+
     - Low moon elevation (< 10°)
     - High atmospheric noise
     - Suboptimal antenna pointing
@@ -781,7 +796,9 @@ class awgn:  # noqa: N801
   """AWGN-only channel presets for baseline testing.
 
   Pure additive white Gaussian noise without fading or other impairments.
+
   Useful for:
+
   - Baseline performance measurement
   - Codec testing
   - SNR threshold determination
