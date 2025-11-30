@@ -21,6 +21,10 @@ from shannon_bench.simulator.impairements import (
   RicianFading,
   SSBFilter,
 )
+from shannon_bench.simulator.ssb_system import (
+  SSBReceiver,
+  SSBTransmitter,
+)
 from shannon_bench.simulator.transmission_system import (
   Receiver,
   TransmissionSystem,
@@ -41,6 +45,8 @@ __all__ = [
   "Receiver",
   "RicianFading",
   "SSBFilter",
+  "SSBReceiver",
+  "SSBTransmitter",
   "TransmissionSystem",
   "Transmitter",
   # Channel presets
